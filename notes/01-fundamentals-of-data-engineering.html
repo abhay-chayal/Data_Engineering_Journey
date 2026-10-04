@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fundamentals of Data Engineering — Notes</title>
+<style>
+  :root {
+    --bg: #0b0912; --panel: #14111f; --panel2: #1b1729; --line: rgba(255,255,255,.10);
+    --text: #e8e6f0; --muted: #9aa7b4; --accent: #a78bfa; --hot: #f0913d; --ok: #61dc78; --blue: #5eb4ff;
+    --code-bg: #0f0c19; --shadow: 0 6px 24px rgba(0,0,0,.35);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f7f5fc; --panel: #ffffff; --panel2: #f0ecfa; --line: rgba(20,10,50,.12);
+      --text: #1d1930; --muted: #5d6675; --accent: #6d4fd6; --hot: #c4600f; --ok: #1f8a3b; --blue: #1d6fc0;
+      --code-bg: #f3f0fb; --shadow: 0 4px 16px rgba(40,20,90,.10);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f5fc; --panel: #ffffff; --panel2: #f0ecfa; --line: rgba(20,10,50,.12);
+    --text: #1d1930; --muted: #5d6675; --accent: #6d4fd6; --hot: #c4600f; --ok: #1f8a3b; --blue: #1d6fc0;
+    --code-bg: #f3f0fb; --shadow: 0 4px 16px rgba(40,20,90,.10);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 20px; }
+  body { margin: 0; background: radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--accent) 14%, var(--bg)) 0%, var(--bg) 45%) fixed; color: var(--text);
+    font: 16px/1.7 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; background: linear-gradient(90deg, var(--accent), var(--hot)); z-index: 50; }
+
+  .layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); max-width: 1280px; margin: 0 auto; }
+  nav#toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 22px 14px 40px 20px; border-right: 1px solid var(--line); }
+  nav#toc h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  nav#toc a { display: block; padding: 5px 10px; margin: 1px 0; border-radius: 8px; color: var(--muted); text-decoration: none; font-size: 14px; line-height: 1.4; border-left: 3px solid transparent; }
+  nav#toc a:hover { color: var(--text); background: var(--panel2); }
+  nav#toc a.active { color: var(--text); background: var(--panel2); border-left-color: var(--accent); font-weight: 600; }
+  nav#toc .grp { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 16px 10px 4px; font-weight: 700; }
+  .toolbar { display: flex; gap: 8px; margin-bottom: 14px; }
+  .toolbar button { flex: 1; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 13px; cursor: pointer; }
+  .toolbar button:hover { border-color: var(--accent); }
+
+  main { padding: 36px 36px 120px; min-width: 0; }
+  header.hero { padding: 8px 0 28px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+  .hero .kicker { color: var(--hot); font-weight: 700; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
+  .hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.1; margin: 8px 0 12px; color: var(--accent); }
+  .hero p { color: var(--muted); max-width: 70ch; margin: 6px 0; }
+  .hero a { color: var(--accent); }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .pill { background: var(--panel2); border: 1px solid var(--line); border-radius: 99px; padding: 3px 12px; font-size: 13px; color: var(--muted); }
+
+  section.topic { padding-top: 44px; }
+  section.topic > h2 { font-size: 28px; line-height: 1.25; margin: 0 0 6px; display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  section.topic > h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; }
+  .ts { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); text-decoration: none; border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+  .ts:hover { background: var(--accent); color: var(--bg); }
+  h3 { font-size: 19px; margin: 26px 0 8px; }
+  p { margin: 10px 0; }
+  ul, ol { padding-left: 22px; margin: 8px 0; }
+  li { margin: 5px 0; }
+  strong { color: var(--accent); }
+  code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .9em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+  pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; overflow-x: auto; box-shadow: var(--shadow); line-height: 1.5; font-size: 14px; }
+  pre code { background: none; border: 0; padding: 0; }
+  .muted { color: var(--muted); }
+
+  .callout { border-left: 4px solid var(--hot); background: color-mix(in srgb, var(--hot) 9%, var(--panel)); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 16px 0; }
+  .callout.key { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 9%, var(--panel)); }
+  .callout.tip { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+  .callout .label { display: block; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 2px; color: var(--hot); }
+  .callout.key .label { color: var(--ok); } .callout.tip .label { color: var(--accent); }
+  .callout > :first-child { margin-top: 0; } .callout > :last-child { margin-bottom: 0; }
+
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 18px 0; }
+  .box { padding: 9px 16px; border: 2px solid var(--accent); border-radius: 10px; background: color-mix(in srgb, var(--accent) 9%, transparent); font-size: 14.5px; text-align: center; line-height: 1.35; }
+  .box small { display: block; color: var(--muted); font-size: 12px; }
+  .box.grey { border-color: #7f8c9a; background: rgba(127,140,154,.12); }
+  .box.warn { border-color: var(--hot); background: color-mix(in srgb, var(--hot) 10%, transparent); }
+  .box.ok { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+  .box.blue { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 10%, transparent); }
+  .arrow { color: var(--accent); font-size: 22px; line-height: 1; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin: 16px 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .card h4 { margin: 0 0 6px; font-size: 16px; color: var(--accent); }
+  .card p, .card ul { margin: 6px 0; font-size: 15px; }
+  .card.bronze { border-top: 4px solid #cd7f32; } .card.silver { border-top: 4px solid #aeb7c2; } .card.gold { border-top: 4px solid #e6b800; }
+
+  .tablewrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--panel2); color: var(--accent); font-size: 13px; letter-spacing: .04em; }
+  tr:last-child td { border-bottom: 0; }
+  td.chg, tr.chg td { background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  tr.old td { background: color-mix(in srgb, var(--hot) 12%, transparent); }
+  table.mini { font-size: 14px; width: auto; min-width: 280px; }
+  .caption { font-size: 13px; color: var(--muted); margin: 14px 0 -8px; font-weight: 600; }
+
+  details { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; margin: 10px 0; }
+  details summary { cursor: pointer; padding: 11px 16px; font-weight: 600; list-style: none; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: "▸"; color: var(--accent); margin-right: 10px; display: inline-block; transition: transform .15s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  details > div { padding: 0 16px 14px; }
+
+  .recap { margin-top: 22px; background: var(--panel); border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 12px; padding: 12px 16px; }
+  .recap b { color: var(--ok); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+  .recap ul { margin: 4px 0 0; }
+
+  .diagram { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 16px 0; overflow-x: auto; }
+  .star { display: grid; grid-template-columns: repeat(3, auto); gap: 8px 26px; justify-content: center; align-items: center; }
+  .stack { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    nav#toc { position: static; height: auto; max-height: 260px; border-right: 0; border-bottom: 1px solid var(--line); }
+    main { padding: 20px 16px 80px; }
+  }
+  @media print {
+    nav#toc, #progress, .toolbar { display: none; }
+    .layout { display: block; } body { background: #fff; color: #000; }
+    details { border: 0; } details > div { display: block; }
+  }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div class="layout">
+
+<nav id="toc" aria-label="Table of contents">
+  <div class="toolbar">
+    <button id="themeBtn" type="button">Toggle theme</button>
+    <button id="openAll" type="button">Expand Q&amp;A</button>
+  </div>
+  <h2>Contents</h2>
+  <div class="grp">Basics</div>
+  <a href="#what">1 · What is data engineering?</a>
+  <a href="#pillars">2 · Lifecycle &amp; 3 pillars</a>
+  <a href="#updown">3 · Upstream &amp; downstream</a>
+  <div class="grp">Databases &amp; pipelines</div>
+  <a href="#oltp-olap">4 · OLTP vs OLAP</a>
+  <a href="#etl">5 · ETL &amp; pipelines</a>
+  <a href="#layers">6 · Warehouse layers</a>
+  <a href="#incremental">7 · Incremental loading</a>
+  <div class="grp">Modeling</div>
+  <a href="#dimensional">8 · Dimensional modeling</a>
+  <a href="#scd">9 · Slowly changing dimensions</a>
+  <div class="grp">Lakes &amp; formats</div>
+  <a href="#lake">10 · Data lake</a>
+  <a href="#lakehouse">11 · Lakehouse</a>
+  <a href="#formats">12 · Row vs column formats</a>
+  <a href="#delta">13 · Delta Lake</a>
+  <div class="grp">Big data &amp; cloud</div>
+  <a href="#bigdata">14 · Big data frameworks</a>
+  <a href="#spark">15 · Spark architecture</a>
+  <a href="#cloud">16 · Cloud computing</a>
+  <a href="#medallion">17 · Medallion architecture</a>
+  <a href="#azure">18 · Azure services</a>
+  <a href="#e2e">19 · End-to-end architecture</a>
+  <div class="grp">Revision</div>
+  <a href="#cheat">20 · Cheat sheet &amp; interview Q&amp;A</a>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="kicker">Data Engineering Journey · Notes</div>
+  <h1>Fundamentals of Data Engineering</h1>
+  <p>Study notes from <strong>Ansh Lamba</strong>’s <em>Fundamentals of Data Engineering Masterclass (From SCRATCH!)</em> — about 2 h 56 min, covering the full path from “what is data engineering?” to an end-to-end Azure architecture.</p>
+  <p>Each section header has a <span class="ts" style="pointer-events:none">▶ timestamp</span> badge that jumps to that moment in the video. Boxes labelled <strong>Interview</strong> mark things the instructor flagged as commonly asked.</p>
+  <div class="pills"><span class="pill">20 topics</span><span class="pill">OLTP / OLAP</span><span class="pill">ETL</span><span class="pill">SCD 0–3</span><span class="pill">Lakehouse</span><span class="pill">Delta</span><span class="pill">Spark</span><span class="pill">Azure</span></div>
+</header>
+
+<!-- 1 -->
+<section class="topic" id="what">
+  <h2><span class="num">1</span> What is data engineering? <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=251s" target="_blank" rel="noopener">▶ 4:11</a></h2>
+  <p>There are thousands of definitions online. The instructor’s working definition:</p>
+  <div class="callout key"><span class="label">Definition</span>Take <strong>raw, messy data</strong> with no relationships between sources → <strong>transform</strong> it → <strong>serve</strong> it to stakeholders as clean, structured <strong>data models</strong>.</div>
+  <div class="flow">
+    <div class="box grey">Raw data<small>messy, unrelated</small></div><span class="arrow">→</span>
+    <div class="box warn">Transform<small>clean, link, shape</small></div><span class="arrow">→</span>
+    <div class="box ok">Serve<small>to stakeholders</small></div>
+  </div>
+  <h3>The chef analogy</h3>
+  <p>A data engineer is a <strong>chef</strong>: raw vegetables (raw data) come in, the chef cooks them (transformation), and serves a proper dish (data models) that stakeholders can actually “digest”. Handing someone raw potatoes and salt is technically food, but not usable.</p>
+  <h3>Why do we need data engineers?</h3>
+  <ul>
+    <li>Data volume has exploded, and businesses want <strong>data-driven decisions</strong>.</li>
+    <li>Someone must move data from one place to another <em>and</em> transform it on the way, so quality is high.</li>
+    <li>That demand is why job postings and pay are high.</li>
+  </ul>
+  <div class="callout tip"><span class="label">Study tip from the video</span>Understand the <em>concept</em>, don’t memorise a definition. Draw small, silly diagrams and analogies in your notes — they’re faster to revise than theory.</div>
+</section>
+
+<!-- 2 -->
+<section class="topic" id="pillars">
+  <h2><span class="num">2</span> Lifecycle &amp; the 3 pillars <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=607s" target="_blank" rel="noopener">▶ 10:07</a></h2>
+  <div class="flow">
+    <div class="box">1. Data generation<small>production</small></div><span class="arrow">→</span>
+    <div class="box warn">2. Data transformation</div><span class="arrow">→</span>
+    <div class="box ok">3. Data serving</div>
+  </div>
+  <div class="callout"><span class="label">Interview</span>“What are the three pillars of data engineering?” → <strong>Generation, Transformation, Serving.</strong></div>
+
+  <h3>Pillar 1 — Data generation <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=870s" target="_blank" rel="noopener">▶ 14:30</a></h3>
+  <ul>
+    <li>Any activity creates data: placing an Amazon order (click, quantity, address, payment, confirmation), searching a movie on Prime, a phone call in your bill, a Google search.</li>
+    <li>Sources can be CSV files, databases, or <strong>APIs</strong> (a connector between applications/websites used to pull information).</li>
+    <li>Generated data is saved to <strong>storage</strong>. The data engineer <em>consumes</em> from that storage; like a chef, you don’t care who bought the carrots, only that they’re there.</li>
+  </ul>
+  <div class="cards">
+    <div class="card"><h4>SQL databases</h4><p>Relational, <strong>structured</strong> data (tables, rows, columns).</p></div>
+    <div class="card"><h4>NoSQL</h4><p>Means <strong>“not only SQL”</strong> — for unstructured / semi-structured data that doesn’t fit neat tables.</p></div>
+  </div>
+
+  <h3>Pillar 2 — Data transformation <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=1253s" target="_blank" rel="noopener">▶ 20:53</a></h3>
+  <ul>
+    <li>The data engineer’s “favourite spot”: you typically spend <strong>70–80% of your time</strong> here.</li>
+    <li>Source systems are usually managed by a <strong>DBA</strong> (database administrator) — not you. You take their messy, possibly unlinked data and build a <strong>clean database</strong>.</li>
+    <li>The output is <strong>curated data</strong> — efficient for reporting and for downstream users.</li>
+  </ul>
+
+  <h3>Pillar 3 — Data serving <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=1480s" target="_blank" rel="noopener">▶ 24:40</a></h3>
+  <ul>
+    <li>Cooked food sits in a big container; you can’t tell customers “eat from that”. You serve <strong>small portions</strong> for different customer needs.</li>
+    <li>In data terms: instead of the big dump, you create <strong>data models</strong> for each type of consumer.</li>
+  </ul>
+  <div class="recap"><b>Recap</b><ul><li>Generate → Transform → Serve. Chef analogy throughout.</li><li>Transformation is where most time goes; output is curated data.</li></ul></div>
+</section>
+
+<!-- 3 -->
+<section class="topic" id="updown">
+  <h2><span class="num">3</span> Upstream &amp; downstream <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=1749s" target="_blank" rel="noopener">▶ 29:09</a></h2>
+  <p>Think of a stream of water: whatever is <em>before</em> you in the flow is upstream; what comes <em>after</em> is downstream. It describes data flow, <strong>not seniority</strong>.</p>
+  <div class="flow">
+    <div class="box grey">Upstream<small>DBAs, software / web developers who own the sources</small></div><span class="arrow">→</span>
+    <div class="box warn">You — data engineer</div><span class="arrow">→</span>
+    <div class="box ok">Downstream<small>data analysts, data scientists, analytics managers</small></div>
+  </div>
+  <ul>
+    <li>In small companies, developers may manage the data source themselves.</li>
+    <li>You get <strong>requirements from downstream</strong>, <strong>data from upstream</strong>, and must sync both.</li>
+    <li>Talk regularly to both sides — sometimes you need upstream to change the source for a project. Keep both relationships healthy.</li>
+  </ul>
+</section>
+
+<!-- 4 -->
+<section class="topic" id="oltp-olap">
+  <h2><span class="num">4</span> OLTP vs OLAP <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=2123s" target="_blank" rel="noopener">▶ 35:23</a></h2>
+  <div class="flow">
+    <div class="box"><b>OLTP</b><small>Online Transactional Processing</small></div>
+    <div class="box blue"><b>OLAP</b><small>Online Analytical Processing</small></div>
+  </div>
+  <div class="tablewrap"><table>
+    <tr><th></th><th>OLTP database</th><th>OLAP database (= data warehouse)</th></tr>
+    <tr><td><b>Purpose</b></td><td>Store transactional data (e.g. banking transactions, user clicks) as it happens</td><td>Analysis &amp; reporting over large volumes</td></tr>
+    <tr><td><b>Optimised for</b></td><td><strong>Writes &amp; updates</strong> (small chunks, often)</td><td><strong>Reads</strong> (heavy queries on lots of data)</td></tr>
+    <tr><td><b>Modeling</b></td><td>Relational modeling — <strong>normalization</strong> (1NF, 2NF, 3NF)</td><td><strong>Dimensional modeling</strong> (facts + dimensions)</td></tr>
+    <tr><td><b>Owned by</b></td><td>DBA (it’s your <em>source</em>)</td><td><strong>Data engineer</strong> — you own it</td></tr>
+    <tr><td><b>Examples</b></td><td>PostgreSQL, MySQL, MS SQL Server, Oracle</td><td>Snowflake, Azure Synapse, Redshift, BigQuery</td></tr>
+  </table></div>
+  <h3>Why do we need OLAP at all?</h3>
+  <p>The OLTP database grows huge — every second, every millisecond. Pointing reports straight at it would make them “die”. So we build a separate OLAP database tuned for reads, and reports query <em>that</em> instead.</p>
+  <h3>Normalization notes</h3>
+  <ul>
+    <li>Normal forms exist up to ~6, but practice stops at <strong>3NF</strong> — beyond that is hard to manage.</li>
+    <li>As a data engineer you only need basics: normalization concepts and how to join tables. Focus your energy on the OLAP side.</li>
+  </ul>
+  <div class="callout"><span class="label">Interview</span>OLTP vs OLAP: write-optimised, normalised, source system <em>vs</em> read-optimised, dimensional, analytics system.</div>
+</section>
+
+<!-- 5 -->
+<section class="topic" id="etl">
+  <h2><span class="num">5</span> ETL — Extract, Transform, Load <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=3082s" target="_blank" rel="noopener">▶ 51:22</a></h2>
+  <p>ETL is the process that builds the OLAP database / data warehouse from the OLTP source.</p>
+  <div class="flow">
+    <div class="box grey">Source<small>OLTP</small></div><span class="arrow">→ extract →</span>
+    <div class="box warn">Transform</div><span class="arrow">→ load →</span>
+    <div class="box blue">Data warehouse<small>OLAP</small></div>
+  </div>
+  <h3>Why pipelines?</h3>
+  <p>Doing it once isn’t enough — the source keeps updating (say, every hour). We don’t repeat the work by hand; we build an <strong>ETL / data pipeline</strong> that extracts, transforms and loads automatically.</p>
+  <div class="callout tip"><span class="label">Analogy</span>A water pipeline: the tank is the source, and you just open the tap — you don’t carry buckets each time.</div>
+</section>
+
+<!-- 6 -->
+<section class="topic" id="layers">
+  <h2><span class="num">6</span> Data warehouse &amp; layers <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=3322s" target="_blank" rel="noopener">▶ 55:22</a></h2>
+  <p>Data doesn’t go straight from source into the warehouse. It passes through two layers (think of them as folders):</p>
+  <div class="flow">
+    <div class="box grey">Source</div><span class="arrow">→ extract →</span>
+    <div class="box warn">Staging layer</div><span class="arrow">→ transform →</span>
+    <div class="box ok">Core layer<small>facts &amp; dimensions</small></div>
+  </div>
+  <ul>
+    <li><strong>Staging layer</strong> — where extracted data lands first.</li>
+    <li><strong>Core layer</strong> — the dimensional data model (facts + dimensions).</li>
+  </ul>
+  <div class="callout"><span class="label">Interview</span><strong>Why stage at all?</strong> You shouldn’t query/transform directly against the source — it can slow the source down. Land a copy in staging, then work from there.</div>
+  <h3>Two kinds of staging</h3>
+  <div class="cards">
+    <div class="card"><h4>Transient</h4><p>Temporary. Today’s data lands, gets used for the core layer, and is <strong>truncated (deleted)</strong> before the next load so already-used data isn’t reused.</p><p class="muted">Used ~99% of the time.</p></div>
+    <div class="card"><h4>Persistent</h4><p>Keeps the history of what was staged over time.</p><p class="muted">Rare; depends on the project.</p></div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="topic" id="incremental">
+  <h2><span class="num">7</span> Incremental loading <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=3714s" target="_blank" rel="noopener">▶ 1:01:54</a></h2>
+  <p>A <strong>data-fetching strategy</strong>: after the first full load, only bring in what’s new.</p>
+  <div class="diagram">
+    <div class="caption">Example from the video</div>
+    <div class="flow">
+      <div class="box grey">Source has Jan 2023 → 01 Jan 2024</div><span class="arrow">→</span>
+      <div class="box ok">First load: <b>everything</b></div>
+    </div>
+    <div class="flow">
+      <div class="box grey">Next day source adds <b>02 Jan 2024</b></div><span class="arrow">→</span>
+      <div class="box warn">Load <b>only 02 Jan</b> → staging → core</div>
+    </div>
+  </div>
+  <ul>
+    <li>Why re-pull everything when you already have it? It wastes computation.</li>
+    <li>The cycle repeats each run: new data → staging → core.</li>
+    <li>This is the standard practice in data engineering — you don’t pull all the data again and again.</li>
+  </ul>
+  <div class="callout"><span class="label">Interview</span>“What is incremental loading and how would you apply it?” is a favourite question.</div>
+</section>
+
+<!-- 8 -->
+<section class="topic" id="dimensional">
+  <h2><span class="num">8</span> Dimensional data modeling <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=3993s" target="_blank" rel="noopener">▶ 1:06:33</a></h2>
+  <p>The modeling technique for OLAP: store data as <strong>one fact table</strong> linked to several <strong>dimension tables</strong>. (OLTP uses normal forms; OLAP uses this.)</p>
+  <div class="cards">
+    <div class="card"><h4>Fact table</h4><p>Only <strong>numeric</strong> values — price, bill, MRP, quantity, weight — plus the keys/IDs that link to dimensions.</p></div>
+    <div class="card"><h4>Dimension tables</h4><p>Everything else — descriptive, contextual, categorised data. Group related attributes:</p>
+      <ul><li><code>customer_dim</code>: name, address, card info</li><li><code>product_dim</code>: product name, category</li></ul></div>
+  </div>
+  <p>Because dimensions cluster attributes by business meaning, the data is <strong>denormalised</strong> (semi-/less-normalised) — all customer info lives in the customer table, all product info in the product table.</p>
+
+  <h3>Star schema vs snowflake schema <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=4305s" target="_blank" rel="noopener">▶ 1:11:45</a></h3>
+  <div class="cards">
+    <div class="card">
+      <h4>★ Star schema</h4>
+      <div class="diagram" style="padding:10px">
+        <div class="star">
+          <div></div><div class="box blue">customer_dim</div><div></div>
+          <div class="box blue">product_dim</div><div class="box warn"><b>FACT</b></div><div class="box blue">date_dim</div>
+          <div></div><div class="box blue">store_dim</div><div></div>
+        </div>
+      </div>
+      <p>The fact is the centre; each dimension attaches directly — looks like a star. <strong>~99% of real-world use</strong>: fast to query, easy to manage.</p>
+    </div>
+    <div class="card">
+      <h4>❄ Snowflake schema</h4>
+      <div class="diagram" style="padding:10px">
+        <div class="flow" style="justify-content:center;margin:6px 0">
+          <div class="box grey">category_dim</div><span class="arrow">→</span>
+          <div class="box blue">product_dim</div><span class="arrow">→</span>
+          <div class="box warn"><b>FACT</b></div>
+        </div>
+      </div>
+      <p>Dimensions form a <strong>hierarchy</strong> (one dimension refers to another, which refers to the fact). Branches like a snowflake. Harder to manage, so rarely used — but know it.</p>
+    </div>
+  </div>
+  <div class="callout"><span class="label">Interview</span>Facts hold numeric measures; dimensions hold descriptive context. Star = dimensions directly on the fact; snowflake = hierarchy of dimensions.</div>
+</section>
+
+<!-- 9 -->
+<section class="topic" id="scd">
+  <h2><span class="num">9</span> Slowly changing dimensions (SCD) <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=4535s" target="_blank" rel="noopener">▶ 1:15:35</a></h2>
+  <div class="callout key"><span class="label">One of the top-3 most important topics (per the video)</span>Dimensions hold descriptive data, and that data changes. SCD types are the strategies for handling those changes. Types 0, 1, 2 and 3 are the ones used in practice.</div>
+
+  <h3>The scenario used throughout</h3>
+  <p>A product dimension. In the source, product 3 (<code>com</code>) was in <em>clothing</em>, but its category changes to <em>hair accessories</em>. How should the dimension reflect it?</p>
+  <div class="caption">Before the change</div>
+  <div class="tablewrap"><table class="mini">
+    <tr><th>product_id</th><th>name</th><th>category</th></tr>
+    <tr><td>1</td><td>honey</td><td>food</td></tr>
+    <tr><td>2</td><td>shirt</td><td>clothing</td></tr>
+    <tr><td>3</td><td>com</td><td>clothing</td></tr>
+  </table></div>
+
+  <h3>Type 0 — no change</h3>
+  <p>The dimension is assumed fixed, so there’s nothing to keep updated. Hence “type 0” — it isn’t really a handling strategy.</p>
+
+  <h3>Type 1 — overwrite (“upsert”) <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=4535s" target="_blank" rel="noopener">▶ 1:15</a></h3>
+  <p><strong>UPSERT = UPDATE + INSERT.</strong> The new value simply overwrites the old; history is lost.</p>
+  <div class="caption">After (type 1)</div>
+  <div class="tablewrap"><table class="mini">
+    <tr><th>product_id</th><th>name</th><th>category</th></tr>
+    <tr><td>1</td><td>honey</td><td>food</td></tr>
+    <tr><td>2</td><td>shirt</td><td>clothing</td></tr>
+    <tr class="chg"><td>3</td><td>com</td><td><b>hair accessories</b></td></tr>
+    <tr class="chg"><td>4</td><td>shoes</td><td>footwear <span class="muted">(new row)</span></td></tr>
+  </table></div>
+  <ul>
+    <li>For each incoming record: ID not found → <strong>insert</strong>; ID found → <strong>update</strong>.</li>
+    <li>Records with unchanged values are technically “updated” too, but you see no difference.</li>
+    <li>The <strong>most used</strong> SCD (~70–80% of the time): easy to manage and performant, since no history is kept.</li>
+  </ul>
+  <div class="callout"><span class="label">Interview</span>If asked to “apply upsert”, they mean <strong>SCD Type 1</strong>.</div>
+
+  <h3>Type 2 — keep full history <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=5122s" target="_blank" rel="noopener">▶ 1:25:22</a></h3>
+  <p>Add <strong>three columns</strong> to the dimension: <code>start_date</code>, <code>expiry_date</code>, and an <code>in_use</code> flag. Instead of overwriting, <strong>insert a new row</strong> and close off the old one.</p>
+  <div class="caption">After (type 2) — change effective 2 Jan 2024</div>
+  <div class="tablewrap"><table>
+    <tr><th>product_id</th><th>name</th><th>category</th><th>start_date</th><th>expiry_date</th><th>in_use</th></tr>
+    <tr><td>1</td><td>honey</td><td>food</td><td>01-Jan-2024</td><td>01-Jan-3000</td><td>yes</td></tr>
+    <tr><td>2</td><td>shirt</td><td>clothing</td><td>01-Jan-2024</td><td>01-Jan-3000</td><td>yes</td></tr>
+    <tr class="old"><td>3</td><td>com</td><td>clothing</td><td>01-Jan-2024</td><td><b>02-Jan-2024</b></td><td><b>no</b></td></tr>
+    <tr class="chg"><td>3</td><td>com</td><td><b>hair accessories</b></td><td><b>02-Jan-2024</b></td><td>01-Jan-3000</td><td><b>yes</b></td></tr>
+  </table></div>
+  <ul>
+    <li>A far-future expiry date (e.g. year 3000) means “still current”.</li>
+    <li>Rarer than type 1, but you must know it: “keep the history” → <strong>Type 2</strong>.</li>
+  </ul>
+
+  <h3>Type 3 — keep the previous value <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=5313s" target="_blank" rel="noopener">▶ 1:28:33</a></h3>
+  <p>Add a <code>previous_category</code> column. Preserves the prior value without managing date columns. No timeline, just “current” and “previous”.</p>
+  <div class="tablewrap"><table>
+    <tr><th>product_id</th><th>name</th><th>current_category</th><th>previous_category</th></tr>
+    <tr><td>1</td><td>honey</td><td>food</td><td>food</td></tr>
+    <tr><td>2</td><td>shirt</td><td>clothing</td><td>clothing</td></tr>
+    <tr class="chg"><td>3</td><td>com</td><td><b>hair accessories</b></td><td><b>clothing</b></td></tr>
+  </table></div>
+
+  <div class="tablewrap"><table>
+    <tr><th>Type</th><th>Strategy</th><th>History kept?</th><th>Say it as</th></tr>
+    <tr><td>0</td><td>No change</td><td>n/a</td><td>fixed dimension</td></tr>
+    <tr><td>1</td><td>Overwrite</td><td>No</td><td><b>Upsert</b></td></tr>
+    <tr><td>2</td><td>New row + start/expiry/flag</td><td>Full</td><td>keep history</td></tr>
+    <tr><td>3</td><td>Extra “previous value” column</td><td>Last value only</td><td>previous value</td></tr>
+  </table></div>
+  <details>
+    <summary>Extra (not from the video): SQL sketch of Type 1 and Type 2</summary>
+    <div>
+<pre><code>-- Type 1: upsert (overwrite)
+MERGE INTO dim_product t
+USING stg_product s ON t.product_id = s.product_id
+WHEN MATCHED THEN UPDATE SET t.name = s.name, t.category = s.category
+WHEN NOT MATCHED THEN INSERT (product_id, name, category)
+                      VALUES (s.product_id, s.name, s.category);
+
+-- Type 2: close the old row, then insert the new one
+UPDATE dim_product SET expiry_date = '2024-01-02', in_use = 0
+WHERE product_id = 3 AND in_use = 1;
+
+INSERT INTO dim_product (product_id, name, category, start_date, expiry_date, in_use)
+VALUES (3, 'com', 'hair accessories', '2024-01-02', '3000-01-01', 1);</code></pre>
+    </div>
+  </details>
+</section>
+
+<!-- 10 -->
+<section class="topic" id="lake">
+  <h2><span class="num">10</span> Data lake <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=5413s" target="_blank" rel="noopener">▶ 1:30:13</a></h2>
+  <p>Data warehouses only handled <strong>structured</strong> data (tables, rows, columns). As data grew exponentially, that stopped being practical. A <strong>data lake</strong> stores structured, <strong>semi-structured</strong> (CSV, JSON) and unstructured data.</p>
+  <h3>Data lake vs data warehouse <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=5590s" target="_blank" rel="noopener">▶ 1:33:10</a></h3>
+  <div class="tablewrap"><table>
+    <tr><th></th><th>Data warehouse</th><th>Data lake</th></tr>
+    <tr><td><b>Data types</b></td><td>Structured only</td><td>Structured, semi-structured, unstructured</td></tr>
+    <tr><td><b>Schema</b></td><td><strong>Schema-on-write</strong> — defined <em>before</em> data is stored (like DDL before inserting)</td><td><strong>Schema-on-read</strong> — store raw first, define schema <em>after</em></td></tr>
+    <tr><td><b>Storage cost</b></td><td>Higher</td><td>Very cheap (the business reason it won)</td></tr>
+    <tr><td><b>Performance</b></td><td>—</td><td>Cost &amp; query performance better, per the Microsoft comparison shown</td></tr>
+  </table></div>
+  <div class="callout tip"><span class="label">Don’t throw your warehouse notes away</span>The lake doesn’t make warehouse knowledge useless — the next section shows it all gets reused.</div>
+</section>
+
+<!-- 11 -->
+<section class="topic" id="lakehouse">
+  <h2><span class="num">11</span> Lakehouse <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=5751s" target="_blank" rel="noopener">▶ 1:35:51</a></h2>
+  <div class="flow">
+    <div class="box blue">Data <b>Lake</b><small>cheap storage</small></div><span class="arrow">+</span>
+    <div class="box warn">Data ware<b>house</b><small>dimensional models</small></div><span class="arrow">=</span>
+    <div class="box ok"><b>Lakehouse</b></div>
+  </div>
+  <p>Data stays in the cheap lake. A <strong>metadata layer</strong> (also called the abstraction / logical / tabular-format layer) sits on top and holds the schema, letting you build <strong>dimensional models directly on lake data</strong>.</p>
+  <div class="diagram"><div class="stack">
+    <div class="box ok" style="width:min(520px,100%)">Consumers: reports · data scientists · managers — query with normal SQL</div>
+    <span class="arrow">↑</span>
+    <div class="box warn" style="width:min(520px,100%)">Metadata layer (tabular format / schema)</div>
+    <span class="arrow">↑</span>
+    <div class="box blue" style="width:min(520px,100%)">Data lake — Parquet, JSON, CSV files</div>
+  </div></div>
+  <ul>
+    <li>Everything you learned still applies: dimensional modeling, facts &amp; dimensions, SCD types, ETL, incremental loading.</li>
+    <li>The only change: data lives as files (JSON, CSV, Parquet) in the lake rather than in traditional database tables.</li>
+  </ul>
+</section>
+
+<!-- 12 -->
+<section class="topic" id="formats">
+  <h2><span class="num">12</span> Row-based vs column-based file formats <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=6106s" target="_blank" rel="noopener">▶ 1:41:46</a></h2>
+  <p>The difference is <strong>how data is laid out on disk</strong>. Using this table:</p>
+  <div class="tablewrap"><table class="mini">
+    <tr><th>id</th><th>name</th><th>category</th></tr>
+    <tr><td>1</td><td>honey</td><td>food</td></tr>
+    <tr><td>2</td><td>shirt</td><td>clothing</td></tr>
+    <tr><td>3</td><td>com</td><td>clothing</td></tr>
+  </table></div>
+  <div class="cards">
+    <div class="card">
+      <h4>Row-based</h4>
+      <p class="muted">Examples: <b>CSV</b>, <b>Avro</b></p>
+<pre><code>1 honey food | 2 shirt clothing | 3 com clothing</code></pre>
+      <p>Whole records written one after another → great for <strong>writes and updates</strong>. Used on the <strong>OLTP</strong> side.</p>
+    </div>
+    <div class="card">
+      <h4>Column-based</h4>
+      <p class="muted">Examples: <b>Parquet</b>, <b>ORC</b></p>
+<pre><code>1 2 3 | honey shirt com | food clothing clothing</code></pre>
+      <p><code>SELECT id FROM …</code> reads one contiguous column; a row format must hop through every record. Great for <strong>fast reads</strong> — OLAP and big data.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section class="topic" id="delta">
+  <h2><span class="num">13</span> Delta Lake <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=6557s" target="_blank" rel="noopener">▶ 1:49:17</a></h2>
+  <div class="callout key"><span class="label">In one line</span>Delta is an <strong>open table format built on top of Parquet</strong> that adds a <strong>transaction log</strong>.</div>
+  <p>Plain Parquet stores each file’s metadata (column definitions, schema) inside the individual file. Delta keeps the information in a central <strong>transaction log</strong> — a folder of <strong>JSON files</strong> recording every operation (version 1 update, version 2 delete, rollback…). That enables:</p>
+  <div class="cards">
+    <div class="card"><h4>⏱ Time travel / versioning</h4><p>Update → V1, delete → V2. Deleted by mistake? Go back to V1.</p></div>
+    <div class="card"><h4>🧬 Schema evolution</h4><p>Source suddenly has a 6th column? Delta can accept it.</p></div>
+    <div class="card"><h4>🔒 ACID transactions</h4><p><b>A</b>tomicity, <b>C</b>onsistency, <b>I</b>solation, <b>D</b>urability — what PostgreSQL/MySQL give you, now on lake storage.</p></div>
+  </div>
+  <p>You get warehouse-like behaviour at low cost, because the data is still just Parquet files plus the log.</p>
+</section>
+
+<!-- 14 -->
+<section class="topic" id="bigdata">
+  <h2><span class="num">14</span> Big data &amp; its frameworks <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=7310s" target="_blank" rel="noopener">▶ 2:01:50</a></h2>
+  <p>Big data is simply very large data. The instructor notes that data is now so large the “big” prefix is barely needed. To work with it you use big data frameworks:</p>
+  <div class="cards">
+    <div class="card"><h4>Apache Kafka</h4><p><strong>Streaming</strong> / real-time data at large volume.</p></div>
+    <div class="card"><h4>Apache Airflow</h4><p><strong>Orchestration</strong> — managing the order and scheduling of many pipelines (like orchestrating music).</p></div>
+    <div class="card"><h4>Apache Hive</h4><p>SQL-like — create external tables/databases over big data.</p></div>
+    <div class="card"><h4>Apache Spark ⭐</h4><p>The centre of big data processing; most in demand.</p></div>
+    <div class="card"><h4>Databricks</h4><p>Management layer for Spark; manages its clusters.</p></div>
+  </div>
+</section>
+
+<!-- 15 -->
+<section class="topic" id="spark">
+  <h2><span class="num">15</span> Distributed computing &amp; Spark architecture <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=7546s" target="_blank" rel="noopener">▶ 2:05:46</a></h2>
+  <p><strong>Distributed computing:</strong> instead of one machine doing the work, combine many (think 20 lab computers acting as one big computer). Many machines together form a <strong>cluster</strong>.</p>
+  <div class="diagram"><div class="stack">
+    <div class="box">You submit a job</div>
+    <span class="arrow">↓</span>
+    <div class="box warn"><b>Driver node</b><small>the brain — orchestrates, assigns work, does no processing</small></div>
+    <span class="arrow">↓ ↓ ↓</span>
+    <div class="flow" style="justify-content:center;margin:0">
+      <div class="box ok">Worker node<small>executes</small></div>
+      <div class="box ok">Worker node<small>executes</small></div>
+      <div class="box ok">Worker node<small>executes</small></div>
+    </div>
+    <span class="arrow">↑ results back to you</span>
+  </div></div>
+  <ul>
+    <li>A <strong>node</strong> = a machine/computer.</li>
+    <li>Exactly <strong>one driver node</strong> per cluster; the rest are <strong>worker nodes</strong> that run the transformations/code.</li>
+    <li>Analogy: split an assignment among 10–20 friends — the group finishes far faster.</li>
+    <li>Databricks removes the burden of managing clusters: you just configure how much compute you need.</li>
+  </ul>
+</section>
+
+<!-- 16 -->
+<section class="topic" id="cloud">
+  <h2><span class="num">16</span> Cloud data engineering &amp; cloud computing <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=7986s" target="_blank" rel="noopener">▶ 2:13:06</a></h2>
+  <p>The instructor claims around 90% of data now lives in the cloud, with only sensitive data kept on-premise. The three big providers:</p>
+  <div class="cards">
+    <div class="card"><h4>Azure</h4><p>Microsoft</p></div>
+    <div class="card"><h4>AWS</h4><p>Amazon Web Services</p></div>
+    <div class="card"><h4>GCP</h4><p>Google Cloud Platform</p></div>
+  </div>
+  <h3>What is cloud computing? <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=8068s" target="_blank" rel="noopener">▶ 2:14:28</a></h3>
+  <p>Owning 100 computers (CPU, RAM, storage each) is expensive, and your needs fluctuate (e.g. 150–200 during a festive season). A cloud provider owns thousands of machines and <strong>rents</strong> them to you:</p>
+  <ul>
+    <li><strong>Pay only for what you use</strong> (use 80 → pay for 80).</li>
+    <li><strong>Scale up in minutes</strong> instead of rushing to buy hardware.</li>
+    <li><strong>You don’t own or maintain</strong> the hardware; the provider handles security.</li>
+    <li>Accessed over the internet.</li>
+  </ul>
+  <div class="callout key"><span class="label">Learn one cloud, not all</span>Services are the same across clouds; they’re just renamed. The instructor recommends starting with <strong>Azure</strong>: strong demand/growth, and a free account with $200 credit for the first 30 days.</div>
+  <div class="tablewrap"><table>
+    <tr><th>Concept</th><th>Azure</th><th>AWS</th><th>GCP</th></tr>
+    <tr><td>Data lake storage</td><td>Azure Data Lake Storage Gen2 (ADLS)</td><td>S3</td><td>Google Cloud Storage</td></tr>
+    <tr><td>Cloud data warehouse</td><td>Synapse Analytics</td><td>Redshift</td><td>BigQuery</td></tr>
+  </table></div>
+  <p class="muted">Snowflake is also named as a cloud data warehouse.</p>
+</section>
+
+<!-- 17 -->
+<section class="topic" id="medallion">
+  <h2><span class="num">17</span> Medallion architecture <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=8420s" target="_blank" rel="noopener">▶ 2:20:20</a></h2>
+  <p>A data architecture used in cloud data engineering — similar in spirit to the staging idea. Data (batch or streaming) moves through three layers, getting cleaner at each step:</p>
+  <div class="cards">
+    <div class="card bronze"><h4>🥉 Bronze</h4><p><b>Raw / landing zone.</b> Data as-is from the source.</p><p><strong>Rule #1: no changes</strong> — no transformation, no schema needed.</p></div>
+    <div class="card silver"><h4>🥈 Silver</h4><p><b>Cleaned &amp; transformed.</b> Define structure, enforce schema, evolve schema if needed.</p></div>
+    <div class="card gold"><h4>🥇 Gold</h4><p><b>Ready to serve.</b> Facts &amp; dimensions or aggregated tables, per downstream requirements.</p></div>
+  </div>
+  <div class="flow"><div class="box grey">Source</div><span class="arrow">→</span><div class="box" style="border-color:#cd7f32">Bronze</div><span class="arrow">→</span><div class="box" style="border-color:#aeb7c2">Silver</div><span class="arrow">→</span><div class="box" style="border-color:#e6b800">Gold</div><span class="arrow">→</span><div class="box ok">Analysts &amp; scientists</div></div>
+  <div class="callout"><span class="label">Interview</span>Hot topic: bronze = raw, no change · silver = cleaned/transformed · gold = modeled and served.</div>
+</section>
+
+<!-- 18 -->
+<section class="topic" id="azure">
+  <h2><span class="num">18</span> Azure services, one by one <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=9078s" target="_blank" rel="noopener">▶ 2:31:18</a></h2>
+  <div class="cards">
+    <div class="card"><h4>Azure Event Hubs <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=9078s" target="_blank" rel="noopener">2:31</a></h4><p>Stores <strong>streaming</strong> (continuous) data for real-time analytics. The answer to “which Azure service stores streams?”</p></div>
+    <div class="card"><h4>Azure SQL DB <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=9148s" target="_blank" rel="noopener">2:32</a></h4><p>Cloud version of SQL databases like MySQL/PostgreSQL. Same SQL commands (SELECT, UPDATE, DELETE, DDL, TCL, DCL). Used to create <strong>OLTP</strong> databases.</p></div>
+    <div class="card"><h4>Azure Data Lake Storage Gen2 <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=9326s" target="_blank" rel="noopener">2:35</a></h4><p>Stores all data types. Lives inside a <strong>storage account</strong>.</p></div>
+    <div class="card"><h4>Azure Data Factory <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=9551s" target="_blank" rel="noopener">2:39</a></h4><p>The Azure <strong>ETL tool</strong>: move data, orchestrate tasks, many connectors. <strong>Low-code</strong>, not no-code.</p></div>
+    <div class="card"><h4>Azure Databricks <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=9701s" target="_blank" rel="noopener">2:41</a></h4><p>Transforms big data with <strong>Spark clusters</strong>, managed for you (you only configure compute).</p></div>
+    <div class="card"><h4>Azure Synapse Analytics <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=9818s" target="_blank" rel="noopener">2:43</a></h4><p>Cloud <strong>data warehouse</strong> — equals Snowflake / Redshift / BigQuery. Build facts and dimensions here.</p></div>
+    <div class="card"><h4>Power BI <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=9920s" target="_blank" rel="noopener">2:45</a></h4><p>Reporting. Connects to the gold layer’s star schema to build KPI dashboards (pie/line charts), viewable on phone or laptop.</p></div>
+  </div>
+  <h3>Inside a storage account</h3>
+  <ul>
+    <li>Data lake (containers) · tables (NoSQL / key-value) · file shares · and one more service the instructor couldn’t recall.</li>
+    <li><strong>Hierarchical namespace:</strong> a container is like a folder, and you can nest folders inside it as deep as you like. This is the key difference between a data lake and plain blob storage, and it matters for organising big data.</li>
+  </ul>
+</section>
+
+<!-- 19 -->
+<section class="topic" id="e2e">
+  <h2><span class="num">19</span> End-to-end Azure architecture <a class="ts" href="https://www.youtube.com/watch?v=ZRz-7E-7X7c&t=10152s" target="_blank" rel="noopener">▶ 2:49:12</a></h2>
+  <p>Putting every piece together, following the instructor’s walkthrough:</p>
+  <div class="diagram"><div class="stack">
+    <div class="box grey">IoT Hub / sensors → streams</div><span class="arrow">↓</span>
+    <div class="box">Azure Event Hubs<small>holds real-time data</small></div><span class="arrow">↓ Azure Data Factory moves it</span>
+    <div class="box" style="border-color:#cd7f32">Bronze layer — ADLS Gen2 (as-is)</div><span class="arrow">↓ Databricks / Spark transforms</span>
+    <div class="box" style="border-color:#aeb7c2">Silver layer (cleaned)</div><span class="arrow">↓ Synapse builds star schema</span>
+    <div class="box" style="border-color:#e6b800">Gold layer (facts &amp; dimensions)</div><span class="arrow">↓</span>
+    <div class="flow" style="justify-content:center;margin:0"><div class="box ok">Data analysts → Power BI</div><div class="box ok">Data scientists</div></div>
+  </div></div>
+  <h3>Supporting services (around the pipeline)</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Service</th><th>Role</th><th>Usually owned by</th></tr>
+    <tr><td><b>Microsoft Purview</b></td><td>Data governance &amp; monitoring of data</td><td>Data governance team (know it)</td></tr>
+    <tr><td><b>Azure DevOps</b></td><td>CI/CD — promote code across <strong>Dev → QA → Prod</strong></td><td>—</td></tr>
+    <tr><td><b>Key Vault</b></td><td>Store secrets that can’t be used openly</td><td>—</td></tr>
+    <tr><td><b>Microsoft Entra ID</b></td><td>Record of all users in the organisation</td><td>—</td></tr>
+    <tr><td><b>Monitor</b></td><td>Watch pipelines, spot failures</td><td>—</td></tr>
+    <tr><td><b>Cost Management</b></td><td>Track monthly bills</td><td>—</td></tr>
+  </table></div>
+  <div class="callout tip"><span class="label">Next step in the journey</span>The instructor’s follow-up video builds this whole architecture as an end-to-end Azure project from scratch, including creating a free Azure account (see <a class="ts" href="https://youtu.be/0GTZ-12hYtU" target="_blank" rel="noopener">▶ Azure project</a>).</div>
+</section>
+
+<!-- 20 -->
+<section class="topic" id="cheat">
+  <h2><span class="num">20</span> Cheat sheet &amp; interview Q&amp;A</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Term</th><th>One-liner</th></tr>
+    <tr><td>Data engineering</td><td>Raw data → transform → serve as data models</td></tr>
+    <tr><td>3 pillars</td><td>Generation · Transformation · Serving</td></tr>
+    <tr><td>OLTP</td><td>Write-heavy source DB; normalised (≤3NF)</td></tr>
+    <tr><td>OLAP / data warehouse</td><td>Read-heavy; dimensional model; owned by DE</td></tr>
+    <tr><td>ETL</td><td>Extract → transform → load, automated by pipelines</td></tr>
+    <tr><td>Staging</td><td>Landing area before core; transient (99%) or persistent</td></tr>
+    <tr><td>Incremental load</td><td>Only load the new data after the first full load</td></tr>
+    <tr><td>Fact / Dimension</td><td>Numeric measures / descriptive context</td></tr>
+    <tr><td>Star / snowflake</td><td>Dimensions direct on fact / hierarchy of dimensions</td></tr>
+    <tr><td>SCD 1 / 2 / 3</td><td>Overwrite (upsert) / new row with dates &amp; flag / previous-value column</td></tr>
+    <tr><td>Data lake</td><td>Cheap storage of any data; schema-on-read</td></tr>
+    <tr><td>Lakehouse</td><td>Lake + warehouse via a metadata layer</td></tr>
+    <tr><td>Row vs column</td><td>CSV/Avro (writes) vs Parquet/ORC (reads)</td></tr>
+    <tr><td>Delta</td><td>Parquet + transaction log → time travel, schema evolution, ACID</td></tr>
+    <tr><td>Spark</td><td>Driver node orchestrates; worker nodes execute</td></tr>
+    <tr><td>Medallion</td><td>Bronze raw → Silver clean → Gold served</td></tr>
+  </table></div>
+
+  <h3>Self-test (tap to reveal)</h3>
+  <details><summary>Why do we stage data before the core layer?</summary><div>So you don’t query or transform directly on the source (it slows it down). Land it in staging, then build core from there.</div></details>
+  <details><summary>Which SCD do you use if the business wants the history kept?</summary><div>Type 2: add start date, expiry date and an in-use flag, and insert a new row for each change.</div></details>
+  <details><summary>“Apply upsert” — which SCD type is that?</summary><div>Type 1: update if the record exists, insert if it doesn’t, overwriting the old value.</div></details>
+  <details><summary>Why is column-based storage better for OLAP?</summary><div>A query reads a whole column from contiguous storage in one go; row-based storage has to hop through every record.</div></details>
+  <details><summary>What does Delta add on top of Parquet?</summary><div>A transaction log (JSON files) giving versioning/time travel, schema evolution and ACID transactions.</div></details>
+  <details><summary>Explain Spark’s architecture in two lines.</summary><div>A cluster has one driver node (the brain; assigns tasks) and many worker nodes (execute the transformations). Results flow back to you.</div></details>
+  <details><summary>What are the bronze, silver and gold layers?</summary><div>Bronze: raw, no changes. Silver: cleaned, transformed, schema enforced. Gold: facts/dimensions or aggregates, ready for consumers.</div></details>
+  <details><summary>Why use the cloud instead of owning computers?</summary><div>Pay for what you use, scale in minutes, no hardware to own or maintain, provider handles security.</div></details>
+</section>
+
+<footer>
+  Notes by me, based on <em>Fundamentals of Data Engineering Masterclass (From SCRATCH!)</em> by Ansh Lamba. All credit for the teaching goes to the original creator —
+  <a href="https://www.youtube.com/watch?v=ZRz-7E-7X7c" target="_blank" rel="noopener" style="color:var(--accent)">watch the original video</a>.
+  Items marked “Extra” are my additions, not from the video.
+</footer>
+</main>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  try { var t = localStorage.getItem('de-theme'); if (t) root.setAttribute('data-theme', t); } catch (e) {}
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var cur = root.getAttribute('data-theme') ||
+      (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('de-theme', next); } catch (e) {}
+  });
+
+  var open = false;
+  document.getElementById('openAll').addEventListener('click', function () {
+    open = !open;
+    document.querySelectorAll('details').forEach(function (d) { d.open = open; });
+    this.textContent = open ? 'Collapse Q&A' : 'Expand Q&A';
+  });
+
+  var links = [].slice.call(document.querySelectorAll('nav#toc a'));
+  var secs = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  var bar = document.getElementById('progress');
+  function onScroll() {
+    var h = document.documentElement;
+    bar.style.width = (h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight) * 100) + '%';
+    var idx = 0;
+    secs.forEach(function (s, i) { if (s && s.getBoundingClientRect().top < 140) idx = i; });
+    links.forEach(function (a, i) { a.classList.toggle('active', i === idx); });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+</body>
+</html>
